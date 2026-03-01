@@ -6,6 +6,7 @@ import UserLayout from './components/UserLayout'
 
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/LoginPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AvailabilityPage = lazy(() => import('./pages/AvailabilityPage'))
 const BookingsPage = lazy(() => import('./pages/BookingsPage'))
@@ -16,7 +17,8 @@ const UserBookingPage = lazy(() => import('./pages/user/UserBookingPage'))
 const UserMyBookingsPage = lazy(() => import('./pages/user/UserMyBookingsPage'))
 
 function ProtectedRoute({ children, requiredRole }) {
-    const { user } = useAuth()
+    const { user, loading } = useAuth()
+    if (loading) return <LoadingScreen />
     if (!user) return <Navigate to="/login" replace />
 
     if (requiredRole && user.role !== requiredRole) {
@@ -29,7 +31,8 @@ function ProtectedRoute({ children, requiredRole }) {
 }
 
 function RoleRedirect() {
-    const { user } = useAuth()
+    const { user, loading } = useAuth()
+    if (loading) return <LoadingScreen />
     if (!user) return <Navigate to="/login" replace />
     return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/user/dashboard'} replace />
 }
@@ -39,6 +42,7 @@ export default function App() {
         <Suspense fallback={<LoadingScreen />}>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/book" element={<PublicBookingPage />} />
 
                 {/* Admin Routes */}

@@ -2,54 +2,93 @@ import { useState, useEffect } from 'react'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import {
     HiOutlineCog,
     HiOutlineLink,
     HiOutlineCheckCircle,
     HiOutlineXCircle,
+    HiOutlineUser,
+    HiOutlineUserGroup,
+    HiOutlineLockClosed,
+    HiOutlineTrash,
+    HiOutlinePlus,
 } from 'react-icons/hi'
 
 export default function SettingsPage() {
     const [searchParams] = useSearchParams()
+    const { updateUser } = useAuth()
     const [settings, setSettings] = useState(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [googleStatus, setGoogleStatus] = useState(null)
-
-    useEffect(() => {
-        if (searchParams.get('google') === 'connected') {
-            toast.success('Google account connected successfully!')
-        }
-    }, [searchParams])
+    const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', username: '', role: '' })
+    const [passwords, setPasswords] = useState({ old_password: '', new_password: '' })
 
     const fetchSettings = async () => {
         setLoading(true)
         try {
-            const [settingsRes, googleRes] = await Promise.all([
+            const [settingsRes, googleRes, profileRes] = await Promise.all([
                 api.get('/core/settings/'),
                 api.get('/integrations/google/status/').catch(() => ({ data: { is_connected: false } })),
+                api.get('/accounts/profile/').catch(() => ({ data: { first_name: '', last_name: '', email: '', username: '', role: '' } })),
             ])
             setSettings(settingsRes.data)
             setGoogleStatus(googleRes.data)
-        } catch {
-            toast.error('Failed to load settings')
+            setProfile(profileRes.data)
+
+        } catch (err) {
+            console.error('Settings load error:', err)
+            toast.error('Failed to load some settings')
         } finally {
             setLoading(false)
         }
     }
 
-    useEffect(() => { fetchSettings() }, [])
+    useEffect(() => {
+        fetchSettings()
+        if (searchParams.get('google') === 'connected') {
+            toast.success('Google account connected successfully!')
+        }
+    }, [searchParams])
 
-    const handleSave = async () => {
+    const handleSaveSettings = async () => {
         setSaving(true)
         try {
             const { data } = await api.put('/core/settings/', settings)
             setSettings(data)
-            toast.success('Settings saved!')
-        } catch {
-            toast.error('Failed to save settings')
+            toast.success('System settings saved!')
+        } catch (err) {
+            const msg = err.response?.data ? Object.values(err.response.data)[0] : 'Failed to save settings'
+            toast.error(msg)
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleUpdateProfile = async () => {
+        try {
+            await api.put('/accounts/profile/', profile)
+            toast.success('Profile updated!')
+            updateUser(profile)
+            // Refresh settings to show updated data
+            fetchSettings()
+        } catch (err) {
+            const msg = err.response?.data ? Object.values(err.response.data)[0] : 'Failed to update profile'
+            toast.error(msg)
+        }
+    }
+
+    const handleChangePassword = async () => {
+        try {
+            await api.post('/accounts/profile/change-password/', passwords)
+            toast.success('Password changed!')
+            setPasswords({ old_password: '', new_password: '' })
+        } catch (err) {
+            // Check for specific error fields or the generic detail
+            const data = err.response?.data
+            const msg = data?.detail || (data ? Object.values(data)[0] : 'Failed to change password')
+            toast.error(msg)
         }
     }
 
@@ -58,8 +97,7 @@ export default function SettingsPage() {
             const { data } = await api.get('/integrations/google/auth/')
             window.location.href = data.auth_url
         } catch (err) {
-            const msg = err.response?.data?.error || err.response?.data?.detail
-            toast.error(msg || 'Failed to initiate Google OAuth')
+            toast.error('Failed to initiate Google OAuth')
         }
     }
 
@@ -74,6 +112,7 @@ export default function SettingsPage() {
         }
     }
 
+
     if (loading) {
         return (
             <div className="space-y-6 animate-pulse">
@@ -85,144 +124,231 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-12">
             <div>
                 <h1 className="text-3xl font-bold text-surface-100">Settings</h1>
-                <p className="text-surface-400 mt-1">Configure scheduling and integrations</p>
+                <p className="text-surface-400 mt-1">Manage your profile, scheduling and team</p>
+            </div>
+
+            {/* Profile & Security Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="glass-card p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                            <HiOutlineUser className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-surface-100">Profile Information</h2>
+                            <p className="text-sm text-surface-400">Update your personal details</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-surface-300 mb-1.5">First Name</label>
+                                <input
+                                    type="text"
+                                    value={profile?.first_name || ''}
+                                    onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
+                                    className="input-field"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Last Name</label>
+                                <input
+                                    type="text"
+                                    value={profile?.last_name || ''}
+                                    onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                                    className="input-field"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Username</label>
+                                <input
+                                    type="text"
+                                    value={profile?.username || ''}
+                                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                                    className="input-field"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Email Address</label>
+                                <input
+                                    type="email"
+                                    value={profile?.email || ''}
+                                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                    className="input-field"
+                                />
+                            </div>
+                        </div>
+                        <button onClick={handleUpdateProfile} className="btn-primary w-full mt-2">Update Profile</button>
+                    </div>
+                </div>
+
+                <div className="glass-card p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center">
+                            <HiOutlineLockClosed className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-semibold text-surface-100">Security</h2>
+                            <p className="text-sm text-surface-400">Change your password</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <input
+                            type="password"
+                            placeholder="Current Password"
+                            value={passwords.old_password}
+                            onChange={(e) => setPasswords({ ...passwords, old_password: e.target.value })}
+                            className="input-field"
+                        />
+                        <input
+                            type="password"
+                            placeholder="New Password"
+                            value={passwords.new_password}
+                            onChange={(e) => setPasswords({ ...passwords, new_password: e.target.value })}
+                            className="input-field"
+                        />
+                        <button onClick={handleChangePassword} className="btn-secondary w-full mt-2">Change Password</button>
+                    </div>
+                </div>
             </div>
 
             {/* Scheduling Settings */}
             <div className="glass-card p-6">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
-                        <HiOutlineCog className="w-5 h-5 text-primary-400" />
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                        <HiOutlineCog className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold text-surface-100">Scheduling Configuration</h2>
-                        <p className="text-sm text-surface-400">Set default meeting duration and buffer times</p>
+                        <p className="text-sm text-surface-400">Manage meeting durations and buffers</p>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-surface-300 mb-1.5">
-                            Meeting Duration (min)
-                        </label>
+                        <label className="block text-sm text-surface-400 mb-1">Meeting Duration (min)</label>
                         <input
                             type="number"
-                            min="5"
-                            max="480"
                             value={settings?.meeting_duration || 30}
-                            onChange={(e) =>
-                                setSettings({ ...settings, meeting_duration: parseInt(e.target.value) || 30 })
-                            }
+                            onChange={(e) => setSettings({ ...settings, meeting_duration: parseInt(e.target.value) || 30 })}
                             className="input-field"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-surface-300 mb-1.5">
-                            Buffer Before (min)
-                        </label>
+                        <label className="block text-sm text-surface-400 mb-1">Buffer Before (min)</label>
                         <input
                             type="number"
-                            min="0"
-                            max="120"
                             value={settings?.buffer_before_minutes || 0}
-                            onChange={(e) =>
-                                setSettings({ ...settings, buffer_before_minutes: parseInt(e.target.value) || 0 })
-                            }
+                            onChange={(e) => setSettings({ ...settings, buffer_before_minutes: parseInt(e.target.value) || 0 })}
                             className="input-field"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-surface-300 mb-1.5">
-                            Buffer After (min)
-                        </label>
+                        <label className="block text-sm text-surface-400 mb-1">Buffer After (min)</label>
                         <input
                             type="number"
-                            min="0"
-                            max="120"
                             value={settings?.buffer_after_minutes || 0}
-                            onChange={(e) =>
-                                setSettings({ ...settings, buffer_after_minutes: parseInt(e.target.value) || 0 })
-                            }
+                            onChange={(e) => setSettings({ ...settings, buffer_after_minutes: parseInt(e.target.value) || 0 })}
                             className="input-field"
                         />
                     </div>
                 </div>
+                <button onClick={handleSaveSettings} disabled={saving} className="btn-primary mt-6">
+                    {saving ? 'Saving...' : 'Update Scheduling Settings'}
+                </button>
+            </div>
 
-                <div className="flex items-center gap-3 mt-6 p-4 rounded-xl bg-surface-800/40 border border-surface-700/30">
-                    <input
-                        type="checkbox"
-                        id="weekend_off"
-                        checked={settings?.weekend_off ?? true}
-                        onChange={(e) =>
-                            setSettings({ ...settings, weekend_off: e.target.checked })
-                        }
-                        className="w-4 h-4 rounded border-surface-600 text-primary-500 focus:ring-primary-500/50 bg-surface-800"
-                    />
-                    <label htmlFor="weekend_off" className="text-sm text-surface-300">
-                        Weekend off — Automatically mark Saturday & Sunday as unavailable
-                    </label>
+            {/* Email / SMTP settings */}
+            <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center">
+                        <HiOutlineCog className="w-5 h-5 text-orange-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-surface-100">Email Delivery (SMTP)</h2>
+                        <p className="text-sm text-surface-400">Configure SMTP settings for notifications</p>
+                    </div>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        <label className="block text-sm text-surface-400 mb-1">SMTP Host</label>
+                        <input
+                            type="text"
+                            value={settings?.email_host || ''}
+                            onChange={(e) => setSettings({ ...settings, email_host: e.target.value })}
+                            className="input-field"
+                            placeholder="smtp.gmail.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-surface-400 mb-1">Port</label>
+                        <input
+                            type="number"
+                            value={settings?.email_port || 587}
+                            onChange={(e) => setSettings({ ...settings, email_port: parseInt(e.target.value) || 587 })}
+                            className="input-field"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-surface-400 mb-1">Email (User)</label>
+                        <input
+                            type="email"
+                            value={settings?.email_host_user || ''}
+                            onChange={(e) => setSettings({ ...settings, email_host_user: e.target.value })}
+                            className="input-field"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-surface-400 mb-1">App Password</label>
+                        <input
+                            type="password"
+                            value={settings?.email_host_password || ''}
+                            onChange={(e) => setSettings({ ...settings, email_host_password: e.target.value })}
+                            className="input-field"
+                            placeholder="••••••••••••••••"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm text-surface-400 mb-1">From Email</label>
+                        <input
+                            type="email"
+                            value={settings?.default_from_email || ''}
+                            onChange={(e) => setSettings({ ...settings, default_from_email: e.target.value })}
+                            className="input-field"
+                        />
+                    </div>
+                </div>
+                <button onClick={handleSaveSettings} disabled={saving} className="btn-primary mt-6">
+                    {saving ? 'Saving...' : 'Update Email Settings'}
+                </button>
+            </div>
 
-                <div className="mt-6">
-                    <button onClick={handleSave} disabled={saving} className="btn-primary">
-                        {saving ? 'Saving...' : 'Save Settings'}
+            {/* Google Integration */}
+            <div className="glass-card p-6 text-surface-100">
+                <div className="flex items-center gap-3 mb-6">
+                    <HiOutlineLink className="w-5 h-5 text-red-400" />
+                    <h2 className="text-lg font-semibold">Google Integration</h2>
+                </div>
+                <div className="flex items-center justify-between p-4 bg-surface-800/40 rounded-xl border border-surface-700/50">
+                    <div>
+                        <p className="font-medium">{googleStatus?.is_connected ? 'Connected to Google' : 'Not Connected'}</p>
+                        {googleStatus?.is_connected && (
+                            <p className="text-xs text-surface-500">Connected since {googleStatus.connected_at ? new Date(googleStatus.connected_at).toLocaleDateString() : 'recently'}</p>
+                        )}
+                    </div>
+                    <button
+                        onClick={googleStatus?.is_connected ? handleGoogleDisconnect : handleGoogleConnect}
+                        className={googleStatus?.is_connected ? 'btn-danger text-sm' : 'btn-primary text-sm'}
+                    >
+                        {googleStatus?.is_connected ? 'Disconnect' : 'Connect Account'}
                     </button>
                 </div>
             </div>
 
-            {/* Google Integration */}
-            <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center">
-                        <HiOutlineLink className="w-5 h-5 text-red-400" />
-                    </div>
-                    <div>
-                        <h2 className="text-lg font-semibold text-surface-100">Google Calendar Integration</h2>
-                        <p className="text-sm text-surface-400">
-                            Connect to automatically create Google Meet links
-                        </p>
-                    </div>
-                </div>
-
-                <div className="p-4 rounded-xl bg-surface-800/40 border border-surface-700/30 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        {googleStatus?.is_connected ? (
-                            <>
-                                <HiOutlineCheckCircle className="w-6 h-6 text-emerald-400" />
-                                <div>
-                                    <p className="font-medium text-emerald-400">Connected</p>
-                                    <p className="text-xs text-surface-500">
-                                        Since {new Date(googleStatus.connected_at).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <HiOutlineXCircle className="w-6 h-6 text-surface-500" />
-                                <div>
-                                    <p className="font-medium text-surface-400">Not Connected</p>
-                                    <p className="text-xs text-surface-500">
-                                        Connect to enable Google Meet links
-                                    </p>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {googleStatus?.is_connected ? (
-                        <button onClick={handleGoogleDisconnect} className="btn-danger text-sm">
-                            Disconnect
-                        </button>
-                    ) : (
-                        <button onClick={handleGoogleConnect} className="btn-primary text-sm">
-                            Connect Google
-                        </button>
-                    )}
-                </div>
-            </div>
         </div>
     )
 }

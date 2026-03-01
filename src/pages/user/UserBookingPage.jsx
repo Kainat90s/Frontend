@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
 import toast, { Toaster } from 'react-hot-toast'
@@ -103,11 +103,13 @@ export default function UserBookingPage() {
         }
     }
 
-    const grouped = slots.reduce((acc, slot) => {
-        if (!acc[slot.date]) acc[slot.date] = []
-        acc[slot.date].push(slot)
-        return acc
-    }, {})
+    const grouped = useMemo(() => {
+        return slots.reduce((acc, slot) => {
+            if (!acc[slot.date]) acc[slot.date] = []
+            acc[slot.date].push(slot)
+            return acc
+        }, {})
+    }, [slots])
 
     // Helper to check if a time is within the selected slot
     const isWithinSlot = (time, type) => {
@@ -319,8 +321,8 @@ export default function UserBookingPage() {
                                             type="button"
                                             onClick={() => setForm({ ...form, duration: d })}
                                             className={`py-2 rounded-lg border text-sm font-medium transition-all ${form.duration === d
-                                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
-                                                    : 'border-surface-700 bg-surface-800/40 text-surface-400 hover:border-surface-600'
+                                                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
+                                                : 'border-surface-700 bg-surface-800/40 text-surface-400 hover:border-surface-600'
                                                 }`}
                                         >
                                             {d}m

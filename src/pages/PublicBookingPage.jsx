@@ -37,9 +37,6 @@ export default function PublicBookingPage() {
         end_time: '',
     })
 
-    useEffect(() => {
-        fetchSlots()
-    }, [])
 
     // Initialize custom times when slot is selected or duration changes
     useEffect(() => {

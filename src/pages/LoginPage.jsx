@@ -136,7 +136,14 @@ export default function LoginPage() {
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-surface-300 mb-1.5">Password</label>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-sm font-medium text-surface-300">Password</label>
+                                {!isRegister && (
+                                    <Link to="/forgot-password" className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+                                        Forgot Password?
+                                    </Link>
+                                )}
+                            </div>
                             <div className="relative">
                                 <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
                                 <input

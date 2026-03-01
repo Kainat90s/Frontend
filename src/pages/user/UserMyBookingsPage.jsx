@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
 import {
@@ -70,15 +70,17 @@ export default function UserMyBookingsPage() {
         }
     }
 
-    const filtered = bookings.filter(b => {
-        if (!search) return true
-        const q = search.toLowerCase()
-        return (
-            b.meeting_type?.toLowerCase().includes(q) ||
-            b.slot_date?.includes(q) ||
-            b.status?.toLowerCase().includes(q)
-        )
-    })
+    const filtered = useMemo(() => {
+        return bookings.filter(b => {
+            if (!search) return true
+            const q = search.toLowerCase()
+            return (
+                b.meeting_type?.toLowerCase().includes(q) ||
+                b.slot_date?.includes(q) ||
+                b.status?.toLowerCase().includes(q)
+            )
+        })
+    }, [bookings, search])
 
     const now = new Date()
 

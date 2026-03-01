@@ -12,9 +12,8 @@ import {
 const navItems = [
     { to: '/admin/dashboard', label: 'Dashboard', icon: HiOutlineViewGrid },
     { to: '/admin/availability', label: 'Availability', icon: HiOutlineClock },
-    { to: '/admin/bookings', label: 'All Bookings', icon: HiOutlineCalendar },
-    { to: '/admin/book', label: 'Book Appointment', icon: HiOutlinePlus },
-    { to: '/admin/my-bookings', label: 'Personal Bookings', icon: HiOutlineCalendar },
+    { to: '/admin/bookings', label: 'Client Bookings', icon: HiOutlineCalendar },
+    { to: '/admin/book', label: 'Book for Client', icon: HiOutlinePlus },
     { to: '/admin/settings', label: 'Settings', icon: HiOutlineCog },
 ]
 

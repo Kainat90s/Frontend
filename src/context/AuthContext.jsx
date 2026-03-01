@@ -9,7 +9,30 @@ export function AuthProvider({ children }) {
         const saved = localStorage.getItem('user')
         return saved ? JSON.parse(saved) : null
     })
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const verifySession = async () => {
+            const tokens = localStorage.getItem('tokens')
+            if (!tokens) {
+                logout()
+                setLoading(false)
+                return
+            }
+
+            try {
+                const { data } = await api.get('/accounts/profile/')
+                setUser(data)
+                localStorage.setItem('user', JSON.stringify(data))
+            } catch (err) {
+                console.error('Session verification failed:', err)
+                logout()
+            } finally {
+                setLoading(false)
+            }
+        }
+        verifySession()
+    }, [])
 
     const login = async (username, password) => {
         setLoading(true)
@@ -53,8 +76,13 @@ export function AuthProvider({ children }) {
         setUser(null)
     }
 
+    const updateUser = (userData) => {
+        localStorage.setItem('user', JSON.stringify(userData))
+        setUser(userData)
+    }
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
             {children}
         </AuthContext.Provider>
     )
