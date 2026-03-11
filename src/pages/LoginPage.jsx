@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
 import toast from 'react-hot-toast'
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlineCalendar } from 'react-icons/hi'
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from 'react-icons/hi'
+import { FcGoogle } from 'react-icons/fc'
 
 export default function LoginPage() {
-    const { login, register, loading } = useAuth()
+    const { login, register, loading, updateUser } = useAuth()
     const navigate = useNavigate()
+    const [googleLoading, setGoogleLoading] = useState(false)
     const [isRegister, setIsRegister] = useState(false)
     const [form, setForm] = useState({
         username: '',
@@ -24,6 +27,35 @@ export default function LoginPage() {
     const getRedirectPath = (userData) => {
         return userData?.role === 'admin' ? '/admin/dashboard' : '/user/dashboard'
     }
+
+    useEffect(() => {
+        const hash = window.location.hash || ''
+        if (!hash.startsWith('#')) return
+
+        const params = new URLSearchParams(hash.slice(1))
+        const access = params.get('access')
+        const refresh = params.get('refresh')
+
+        if (!access || !refresh) return
+
+        localStorage.setItem('tokens', JSON.stringify({ access, refresh }))
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search)
+
+        api.get('/accounts/profile/')
+            .then(({ data }) => {
+                localStorage.setItem('user', JSON.stringify(data))
+                updateUser(data)
+                navigate(getRedirectPath(data))
+            })
+            .catch(() => {
+                localStorage.removeItem('tokens')
+                localStorage.removeItem('user')
+                toast.error('Google login failed')
+            })
+            .finally(() => {
+                setGoogleLoading(false)
+            })
+    }, [navigate, updateUser])
 
     const handleSubmit = async (e) => {
         e.preventDefault()
@@ -49,6 +81,33 @@ export default function LoginPage() {
                 toast.error(result.error)
             }
         }
+    }
+
+    const handleGoogleLogin = async () => {
+        setGoogleLoading(true)
+        try {
+            const res = await fetch('/api/integrations/google/login/', { redirect: 'manual' })
+            const contentType = res.headers.get('content-type') || ''
+
+            if (res.ok && contentType.includes('application/json')) {
+                const data = await res.json()
+                const url = data.auth_url || data.url || data.authorization_url
+                if (url) {
+                    window.location.href = url
+                    return
+                }
+            }
+
+            const location = res.headers.get('location')
+            if (location) {
+                window.location.href = location
+                return
+            }
+        } catch {
+            // ignore and fall back to direct navigation
+        }
+
+        window.location.href = '/api/integrations/google/login/'
     }
 
     return (
@@ -188,6 +247,25 @@ export default function LoginPage() {
                         </button>
                     </form>
 
+                    {!isRegister && (
+                        <div className="mt-6">
+                            <div className="flex items-center gap-3">
+                                <div className="h-px bg-surface-800 flex-1" />
+                                <span className="text-xs text-surface-500">or continue with</span>
+                                <div className="h-px bg-surface-800 flex-1" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleGoogleLogin}
+                                disabled={googleLoading || loading}
+                                className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-surface-700 bg-surface-900/60 px-4 py-2.5 text-sm font-medium text-surface-200 hover:bg-surface-900 transition-colors disabled:opacity-50"
+                            >
+                                <FcGoogle className="w-4 h-4" />
+                                {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+                            </button>
+                        </div>
+                    )}
+
                     <div className="mt-6 text-center">
                         <button
                             onClick={() => setIsRegister(!isRegister)}
@@ -196,23 +274,9 @@ export default function LoginPage() {
                             {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Register"}
                         </button>
                     </div>
-                </div>
-
-                {/* Public Booking Link */}
-                <div className="mt-6 text-center">
-                    <div className="glass-card p-4 inline-flex items-center gap-3 rounded-xl">
-                        <div className="w-8 h-8 rounded-lg bg-primary-500/10 border border-primary-500/20 flex items-center justify-center">
-                            <HiOutlineCalendar className="w-4 h-4 text-primary-400" />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-xs text-surface-500">Want to book a meeting?</p>
-                            <Link to="/book" className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors">
-                                Book an Appointment →
-                            </Link>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
+    </div>
     )
 }
+
