@@ -10,10 +10,12 @@ export default function LoginPage() {
     const { login, register, loading, updateUser } = useAuth()
     const navigate = useNavigate()
     const [googleLoading, setGoogleLoading] = useState(false)
+    const [otpLoading, setOtpLoading] = useState(false)
     const [isRegister, setIsRegister] = useState(false)
     const [form, setForm] = useState({
         username: '',
         email: '',
+        otp: '',
         password: '',
         password_confirm: '',
         first_name: '',
@@ -66,10 +68,11 @@ export default function LoginPage() {
                 const savedUser = JSON.parse(localStorage.getItem('user') || '{}')
                 navigate(getRedirectPath(savedUser))
             } else {
-                const msg = typeof result.error === 'string'
-                    ? result.error
-                    : Object.values(result.error).flat().join(', ')
-                toast.error(msg)
+                const err = result.error
+                const msg = typeof err === 'string'
+                    ? err
+                    : err?.email?.[0] || err?.otp?.[0] || err?.password?.[0] || err?.password_confirm?.[0] || Object.values(err || {}).flat().join(', ')
+                toast.error(msg || 'Registration failed')
             }
         } else {
             const result = await login(form.username, form.password)
@@ -108,6 +111,23 @@ export default function LoginPage() {
         }
 
         window.location.href = '/api/integrations/google/login/'
+    }
+
+    const handleRequestOtp = async () => {
+        if (!form.email) {
+            toast.error('Please enter your email first')
+            return
+        }
+        setOtpLoading(true)
+        try {
+            await api.post('/accounts/register/otp/request/', { email: form.email })
+            toast.success('OTP sent to your email')
+        } catch (error) {
+            const msg = error.response?.data?.detail || error.response?.data?.email?.[0] || 'Failed to send OTP'
+            toast.error(msg)
+        } finally {
+            setOtpLoading(false)
+        }
     }
 
     return (
@@ -191,6 +211,42 @@ export default function LoginPage() {
                                         required
                                     />
                                 </div>
+                                <div className="mt-3 flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleRequestOtp}
+                                        disabled={otpLoading}
+                                        className="btn-secondary text-xs px-3 py-2 disabled:opacity-50"
+                                    >
+                                        {otpLoading ? 'Sending...' : 'Get OTP'}
+                                    </button>
+                                    <span className="text-xs text-surface-500">Use OTP to verify email</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {isRegister && (
+                            <div>
+                                <label className="block text-sm font-medium text-surface-300 mb-1.5">OTP</label>
+                                <input
+                                    name="otp"
+                                    value={form.otp}
+                                    onChange={handleChange}
+                                    className="input-field"
+                                    placeholder="Enter OTP"
+                                    required
+                                />
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-xs text-surface-500">Didn&apos;t receive OTP?</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleRequestOtp}
+                                        disabled={otpLoading}
+                                        className="text-xs text-primary-400 hover:text-primary-300 transition-colors disabled:opacity-50"
+                                    >
+                                        Resend OTP
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -210,6 +266,7 @@ export default function LoginPage() {
                                     type="password"
                                     value={form.password}
                                     onChange={handleChange}
+                                    autoComplete={isRegister ? 'new-password' : 'current-password'}
                                     className="input-field pl-11"
                                     placeholder="••••••••"
                                     required
@@ -227,6 +284,7 @@ export default function LoginPage() {
                                         type="password"
                                         value={form.password_confirm}
                                         onChange={handleChange}
+                                        autoComplete="new-password"
                                         className="input-field pl-11"
                                         placeholder="••••••••"
                                         required
