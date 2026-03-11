@@ -5,6 +5,7 @@ import {
     HiOutlineCalendar,
     HiOutlineClipboardList,
     HiOutlineLogout,
+    HiOutlineX,
 } from 'react-icons/hi'
 
 const navItems = [
@@ -13,17 +14,20 @@ const navItems = [
     { to: '/user/my-bookings', label: 'My Bookings', icon: HiOutlineClipboardList },
 ]
 
-export default function UserSidebar() {
+export default function UserSidebar({ variant = 'desktop', open = false, onClose = null }) {
     const { user, logout } = useAuth()
     const navigate = useNavigate()
+    const isMobile = variant === 'mobile'
 
     const handleLogout = () => {
         logout()
         navigate('/login')
     }
 
-    return (
-        <aside className="hidden lg:flex flex-col w-72 bg-surface-900/80 backdrop-blur-xl border-r border-surface-700/50">
+    const sidebarContent = (
+        <aside
+            className={`${isMobile ? 'w-72 h-full' : 'w-72'} flex flex-col bg-surface-900/80 backdrop-blur-xl border-r border-surface-700/50`}
+        >
             {/* Logo */}
             <div className="flex items-center gap-3 px-6 py-6 border-b border-surface-700/50">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-glow">
@@ -35,6 +39,15 @@ export default function UserSidebar() {
                     </h1>
                     <p className="text-xs text-surface-500">My Appointments</p>
                 </div>
+                {isMobile && (
+                    <button
+                        onClick={onClose}
+                        className="ml-auto w-9 h-9 rounded-lg flex items-center justify-center text-surface-400 hover:text-surface-200 hover:bg-surface-800/70 transition-colors"
+                        aria-label="Close menu"
+                    >
+                        <HiOutlineX className="w-5 h-5" />
+                    </button>
+                )}
             </div>
 
             {/* Navigation */}
@@ -81,5 +94,27 @@ export default function UserSidebar() {
                 </div>
             </div>
         </aside>
+    )
+
+    if (!isMobile) {
+        return (
+            <div className="hidden lg:flex">
+                {sidebarContent}
+            </div>
+        )
+    }
+
+    return (
+        <div className={`fixed inset-0 z-40 lg:hidden ${open ? '' : 'pointer-events-none'}`}>
+            <div
+                className={`absolute inset-0 bg-black/60 transition-opacity ${open ? 'opacity-100' : 'opacity-0'}`}
+                onClick={onClose}
+            />
+            <div
+                className={`absolute right-0 top-0 h-full transform transition-transform duration-200 ${open ? 'translate-x-0' : 'translate-x-full'}`}
+            >
+                {sidebarContent}
+            </div>
+        </div>
     )
 }

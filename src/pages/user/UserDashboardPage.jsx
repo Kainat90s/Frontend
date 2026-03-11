@@ -146,7 +146,7 @@ export default function UserDashboardPage() {
                             return (
                                 <div
                                     key={booking.id}
-                                    className="flex items-center gap-4 p-4 rounded-xl border border-surface-700/50 bg-surface-800/30 
+                                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border border-surface-700/50 bg-surface-800/30 
                                                hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all duration-200"
                                 >
                                     <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center shrink-0">
@@ -170,7 +170,7 @@ export default function UserDashboardPage() {
                                             href={booking.meet_link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                                            className="btn-primary text-xs py-2 px-3 flex items-center gap-1.5 w-full sm:w-auto justify-center"
                                         >
                                             <HiOutlineVideoCamera className="w-4 h-4" />
                                             Join

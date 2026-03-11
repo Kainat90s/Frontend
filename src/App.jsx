@@ -7,6 +7,7 @@ import UserLayout from './components/UserLayout'
 // Lazy load pages
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordConfirmPage = lazy(() => import('./pages/ResetPasswordConfirm'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AvailabilityPage = lazy(() => import('./pages/AvailabilityPage'))
 const BookingsPage = lazy(() => import('./pages/BookingsPage'))
@@ -43,6 +44,7 @@ export default function App() {
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/password-reset-confirm/:uid/:token" element={<ResetPasswordConfirmPage />} />
                 <Route path="/book" element={<PublicBookingPage />} />
 
                 {/* Admin Routes */}

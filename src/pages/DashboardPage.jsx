@@ -38,14 +38,14 @@ export default function DashboardPage() {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-surface-100">Dashboard</h1>
                     <p className="text-surface-400 mt-1">Welcome back! Here's your weekly overview.</p>
                 </div>
                 <button
                     onClick={() => fetchDashboard(true)}
-                    className="btn-secondary flex items-center gap-2"
+                    className="btn-secondary flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
                     <HiOutlineRefresh className="w-4 h-4" />
                     Refresh
@@ -138,12 +138,12 @@ const WeeklyHoursCard = memo(({ hours, total }) => {
 
     return (
         <div className="glass-card p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <div>
                     <h2 className="text-lg font-semibold text-surface-100">Weekly Available Hours</h2>
                     <p className="text-sm text-surface-400">Current week Mon–Sun</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                     <p className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-purple-400 bg-clip-text text-transparent">
                         {total.toFixed(1)}h
                     </p>
@@ -204,7 +204,7 @@ const UpcomingMeetingsCard = memo(({ meetings }) => {
                     {meetings.map((meeting, i) => (
                         <div
                             key={meeting.id}
-                            className="flex items-start gap-4 p-4 rounded-xl bg-surface-800/40 border border-surface-700/30 
+                            className="flex flex-col sm:flex-row sm:items-start gap-4 p-4 rounded-xl bg-surface-800/40 border border-surface-700/30 
                          hover:border-primary-500/20 transition-all duration-200 animate-slide-up"
                             style={{ animationDelay: `${i * 100}ms` }}
                         >
