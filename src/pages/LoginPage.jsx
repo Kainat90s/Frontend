@@ -237,11 +237,6 @@ export default function LoginPage() {
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <label className="block text-sm font-medium text-surface-300">Password</label>
-                                {!isRegister && (
-                                    <Link to="/forgot-password" className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
-                                        Forgot Password?
-                                    </Link>
-                                )}
                             </div>
                             <div className="relative">
                                 <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
@@ -256,6 +251,13 @@ export default function LoginPage() {
                                     required
                                 />
                             </div>
+                            {!isRegister && (
+                                <div className="mt-2 text-right">
+                                    <Link to="/forgot-password" className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+                                        Forgot Password?
+                                    </Link>
+                                </div>
+                            )}
                         </div>
 
                         {isRegister && (
