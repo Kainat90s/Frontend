@@ -41,7 +41,7 @@ export default function UserBookingPage() {
         if (user) {
             setForm(prev => ({
                 ...prev,
-                client_name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.username,
+                client_name: user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.email,
                 client_email: user.email || '',
             }))
         }
@@ -266,7 +266,7 @@ export default function UserBookingPage() {
                             {user?.role === 'admin' ? (
                                 <span className="text-emerald-400 font-bold italic underline">Admin: Booking for client below</span>
                             ) : (
-                                <>Booking as <span className="text-emerald-400 font-bold">{user?.first_name || user?.username}</span></>
+                                <>Booking as <span className="text-emerald-400 font-bold">{user?.first_name || user?.email}</span></>
                             )}
                         </p>
                     </div>

@@ -78,11 +78,11 @@ export default function Sidebar({ variant = 'desktop', open = false, onClose = n
                 <div className="glass-card p-4">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-                            {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+                            {user?.first_name?.[0] || user?.email?.[0] || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-surface-200 truncate">
-                                {user?.first_name || user?.username}
+                                {user?.first_name || user?.email}
                             </p>
                             <p className="text-xs text-surface-500 truncate">{user?.email}</p>
                         </div>

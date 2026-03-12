@@ -22,7 +22,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [googleStatus, setGoogleStatus] = useState(null)
-    const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', username: '', role: '' })
+    const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', role: '' })
     const [passwords, setPasswords] = useState({ old_password: '', new_password: '' })
 
     const fetchSettings = async () => {
@@ -31,7 +31,7 @@ export default function SettingsPage() {
             const [settingsRes, googleRes, profileRes] = await Promise.all([
                 api.get('/core/settings/'),
                 api.get('/integrations/google/status/').catch(() => ({ data: { is_connected: false } })),
-                api.get('/accounts/profile/').catch(() => ({ data: { first_name: '', last_name: '', email: '', username: '', role: '' } })),
+                api.get('/accounts/profile/').catch(() => ({ data: { first_name: '', last_name: '', email: '', role: '' } })),
             ])
             setSettings(settingsRes.data)
             setGoogleStatus(googleRes.data)
@@ -163,25 +163,14 @@ export default function SettingsPage() {
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Username</label>
-                                <input
-                                    type="text"
-                                    value={profile?.username || ''}
-                                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                                    className="input-field"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Email Address</label>
-                                <input
-                                    type="email"
-                                    value={profile?.email || ''}
-                                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                                    className="input-field"
-                                />
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-surface-300 mb-1.5">Email Address</label>
+                            <input
+                                type="email"
+                                value={profile?.email || ''}
+                                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                                className="input-field"
+                            />
                         </div>
                         <button onClick={handleUpdateProfile} className="btn-primary w-full mt-2">Update Profile</button>
                     </div>

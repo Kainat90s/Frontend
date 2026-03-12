@@ -34,10 +34,10 @@ export function AuthProvider({ children }) {
         verifySession()
     }, [])
 
-    const login = async (username, password) => {
+    const login = async (email, password) => {
         setLoading(true)
         try {
-            const { data } = await api.post('/accounts/login/', { username, password })
+            const { data } = await api.post('/accounts/login/', { email, password })
             localStorage.setItem('tokens', JSON.stringify(data.tokens))
             localStorage.setItem('user', JSON.stringify(data.user))
             setUser(data.user)

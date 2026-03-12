@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser } from 'react-icons/hi'
+import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi'
 import { FcGoogle } from 'react-icons/fc'
 
 export default function LoginPage() {
@@ -13,7 +13,6 @@ export default function LoginPage() {
     const [otpLoading, setOtpLoading] = useState(false)
     const [isRegister, setIsRegister] = useState(false)
     const [form, setForm] = useState({
-        username: '',
         email: '',
         otp: '',
         password: '',
@@ -75,7 +74,7 @@ export default function LoginPage() {
                 toast.error(msg || 'Registration failed')
             }
         } else {
-            const result = await login(form.username, form.password)
+            const result = await login(form.email, form.password)
             if (result.success) {
                 toast.success('Welcome back!')
                 const savedUser = JSON.parse(localStorage.getItem('user') || '{}')
@@ -182,35 +181,20 @@ export default function LoginPage() {
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-surface-300 mb-1.5">Username</label>
+                            <label className="block text-sm font-medium text-surface-300 mb-1.5">Email</label>
                             <div className="relative">
-                                <HiOutlineUser className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
+                                <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
                                 <input
-                                    name="username"
-                                    value={form.username}
+                                    name="email"
+                                    type="email"
+                                    value={form.email}
                                     onChange={handleChange}
                                     className="input-field pl-11"
-                                    placeholder="Enter username"
+                                    placeholder="john@example.com"
                                     required
                                 />
                             </div>
-                        </div>
-
-                        {isRegister && (
-                            <div>
-                                <label className="block text-sm font-medium text-surface-300 mb-1.5">Email</label>
-                                <div className="relative">
-                                    <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-500" />
-                                    <input
-                                        name="email"
-                                        type="email"
-                                        value={form.email}
-                                        onChange={handleChange}
-                                        className="input-field pl-11"
-                                        placeholder="john@example.com"
-                                        required
-                                    />
-                                </div>
+                            {isRegister && (
                                 <div className="mt-3 flex items-center gap-3">
                                     <button
                                         type="button"
@@ -222,8 +206,8 @@ export default function LoginPage() {
                                     </button>
                                     <span className="text-xs text-surface-500">Use OTP to verify email</span>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
 
                         {isRegister && (
                             <div>
@@ -337,4 +321,3 @@ export default function LoginPage() {
     </div>
     )
 }
-

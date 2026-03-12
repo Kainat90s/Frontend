@@ -63,7 +63,7 @@ export default function UserDashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-surface-100">
-                        {greeting()}, {user?.first_name || user?.username} 👋
+                        {greeting()}, {user?.first_name || user?.email} 👋
                     </h1>
                     <p className="text-surface-400 mt-1">Here's your appointment overview</p>
                 </div>
