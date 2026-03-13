@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
 import axios from 'axios'
 import toast, { Toaster } from 'react-hot-toast'
 import {
@@ -21,12 +22,14 @@ const meetingTypes = [
 ]
 
 export default function PublicBookingPage() {
+    const { slug } = useParams()
     const [slots, setSlots] = useState([])
     const [loading, setLoading] = useState(true)
     const [step, setStep] = useState(1) // 1=select slot, 2=fill details, 3=success
     const [selectedSlot, setSelectedSlot] = useState(null)
     const [submitting, setSubmitting] = useState(false)
     const [booking, setBooking] = useState(null)
+    const [linkError, setLinkError] = useState('')
     const [form, setForm] = useState({
         client_name: '',
         client_email: '',
@@ -59,19 +62,38 @@ export default function PublicBookingPage() {
 
     const fetchSlots = useCallback(async () => {
         setLoading(true)
+        setLinkError('')
         try {
-            const { data } = await api.get('/availability/slots/')
+            const endpoint = slug ? `/availability/public/${slug}/slots/` : '/availability/slots/'
+            const { data } = await api.get(endpoint)
             setSlots(data.results || data)
-        } catch {
-            toast.error('Failed to load available slots')
+        } catch (err) {
+            if (slug && err.response?.status === 404) {
+                setLinkError('This booking link is invalid or expired.')
+                setSlots([])
+            } else {
+                toast.error('Failed to load available slots')
+            }
         } finally {
             setLoading(false)
         }
-    }, [])
+    }, [slug])
 
     useEffect(() => {
         fetchSlots()
     }, [fetchSlots])
+
+    useEffect(() => {
+        setStep(1)
+        setSelectedSlot(null)
+        setBooking(null)
+        setSlots([])
+        setForm(prev => ({
+            ...prev,
+            start_time: '',
+            end_time: '',
+        }))
+    }, [slug])
 
     const handleBook = async (e) => {
         e.preventDefault()
@@ -81,6 +103,7 @@ export default function PublicBookingPage() {
             const { data } = await api.post('/bookings/create/', {
                 slot_id: selectedSlot.id,
                 ...form,
+                ...(slug ? { public_slug: slug } : {}),
             })
             setBooking(data)
             setStep(3)
@@ -148,6 +171,16 @@ export default function PublicBookingPage() {
 
             {/* Main Content */}
             <main className="relative z-10 max-w-4xl mx-auto px-6 py-10">
+                {linkError && (
+                    <div className="glass-card p-12 text-center">
+                        <HiOutlineCalendar className="w-16 h-16 text-surface-600 mx-auto mb-4" />
+                        <p className="text-lg text-surface-300">{linkError}</p>
+                        <p className="text-sm text-surface-500 mt-2">Please request a valid booking link from the organizer.</p>
+                    </div>
+                )}
+
+                {!linkError && (
+                    <>
 
                 {/* Step Indicator */}
                 <div className="flex items-center justify-center gap-3 mb-10">
@@ -459,6 +492,8 @@ export default function PublicBookingPage() {
                             </button>
                         </div>
                     </div>
+                )}
+                    </>
                 )}
             </main>
 

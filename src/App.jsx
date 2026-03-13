@@ -45,6 +45,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/password-reset-confirm/:uid/:token" element={<ResetPasswordConfirmPage />} />
+                <Route path="/book/:slug" element={<PublicBookingPage />} />
                 <Route path="/book" element={<PublicBookingPage />} />
 
                 {/* Admin Routes */}

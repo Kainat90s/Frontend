@@ -5,6 +5,7 @@ import {
     HiOutlineCalendar,
     HiOutlineClock,
     HiOutlineCheckCircle,
+    HiOutlineLink,
     HiOutlineXCircle,
     HiOutlineRefresh,
 } from 'react-icons/hi'
@@ -12,12 +13,19 @@ import {
 export default function DashboardPage() {
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [profile, setProfile] = useState(null)
+    const [copied, setCopied] = useState(false)
 
     const fetchDashboard = useCallback(async (showLoading = true) => {
         if (showLoading) setLoading(true)
         try {
-            const { data: res } = await api.get('/core/dashboard/')
+            const [dashboardRes, profileRes] = await Promise.all([
+                api.get('/core/dashboard/'),
+                api.get('/accounts/profile/'),
+            ])
+            const res = dashboardRes.data
             setData(res)
+            setProfile(profileRes.data)
         } catch (err) {
             toast.error('Failed to load dashboard data')
         } finally {
@@ -34,6 +42,21 @@ export default function DashboardPage() {
     }, [data])
 
     if (loading) return <DashboardSkeleton />
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const publicBookingLink = profile?.public_booking_slug ? `${origin}/book/${profile.public_booking_slug}` : ''
+
+    const handleCopyLink = async () => {
+        if (!publicBookingLink) return
+        try {
+            await navigator.clipboard.writeText(publicBookingLink)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+            toast.success('Public booking link copied!')
+        } catch {
+            toast.error('Failed to copy link')
+        }
+    }
 
     return (
         <div className="space-y-8">
@@ -83,6 +106,37 @@ export default function DashboardPage() {
                     subtitle="This week"
                 />
             </div>
+
+            {profile?.role === 'admin' && (
+                <div className="glass-card p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+                                <HiOutlineLink className="w-5 h-5 text-indigo-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-surface-100">Public Booking Link</h2>
+                                <p className="text-sm text-surface-400">Share this link to let guests book without an account</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                            <input
+                                type="text"
+                                readOnly
+                                value={publicBookingLink || 'Set your link in Settings'}
+                                className="input-field min-w-0 sm:min-w-[320px]"
+                            />
+                            <button
+                                onClick={handleCopyLink}
+                                disabled={!publicBookingLink}
+                                className="btn-secondary text-sm"
+                            >
+                                {copied ? 'Copied' : 'Copy Link'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

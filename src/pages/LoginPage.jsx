@@ -30,6 +30,14 @@ export default function LoginPage() {
     }
 
     useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search)
+        const googleError = searchParams.get('google_error')
+        if (googleError) {
+            const msg = googleError === 'access_denied' ? 'Google login cancelled' : `Google login failed: ${googleError}`
+            toast.error(msg)
+            window.history.replaceState({}, document.title, window.location.pathname + window.location.hash)
+        }
+
         const hash = window.location.hash || ''
         if (!hash.startsWith('#')) return
 

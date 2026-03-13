@@ -22,8 +22,13 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [googleStatus, setGoogleStatus] = useState(null)
-    const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', role: '' })
+    const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', role: '', public_booking_slug: '' })
     const [passwords, setPasswords] = useState({ old_password: '', new_password: '' })
+    const [copied, setCopied] = useState(false)
+    const [updatingLink, setUpdatingLink] = useState(false)
+
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const publicBookingLink = profile?.public_booking_slug ? `${origin}/book/${profile.public_booking_slug}` : ''
 
     const fetchSettings = async () => {
         setLoading(true)
@@ -47,8 +52,13 @@ export default function SettingsPage() {
 
     useEffect(() => {
         fetchSettings()
-        if (searchParams.get('google') === 'connected') {
+        const googleParam = searchParams.get('google')
+        if (googleParam === 'connected') {
             toast.success('Google account connected successfully!')
+        } else if (googleParam === 'invalid_grant') {
+            toast.error('Google connect failed. Please try again.')
+        } else if (googleParam === 'error') {
+            toast.error('Google connect failed. Please try again.')
         }
     }, [searchParams])
 
@@ -97,7 +107,8 @@ export default function SettingsPage() {
             const { data } = await api.get('/integrations/google/auth/')
             window.location.href = data.auth_url
         } catch (err) {
-            toast.error('Failed to initiate Google OAuth')
+            const msg = err.response?.data?.error || 'Failed to initiate Google OAuth'
+            toast.error(msg)
         }
     }
 
@@ -109,6 +120,45 @@ export default function SettingsPage() {
             toast.success('Google account disconnected')
         } catch {
             toast.error('Failed to disconnect')
+        }
+    }
+
+    const handleGoogleReconnect = async () => {
+        if (!confirm('Reconnect Google account?')) return
+        try {
+            await api.post('/integrations/google/disconnect/').catch(() => {})
+            const { data } = await api.get('/integrations/google/auth/')
+            window.location.href = data.auth_url
+        } catch (err) {
+            const msg = err.response?.data?.error || 'Failed to reconnect Google'
+            toast.error(msg)
+        }
+    }
+
+    const handleCopyPublicLink = async () => {
+        if (!publicBookingLink) return
+        try {
+            await navigator.clipboard.writeText(publicBookingLink)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+            toast.success('Public booking link copied!')
+        } catch {
+            toast.error('Failed to copy link')
+        }
+    }
+
+    const handleUpdatePublicLink = async () => {
+        setUpdatingLink(true)
+        try {
+            const payload = { public_booking_slug: profile.public_booking_slug || '' }
+            const { data } = await api.patch('/accounts/profile/', payload)
+            setProfile(data)
+            toast.success('Public booking link updated!')
+        } catch (err) {
+            const msg = err.response?.data ? Object.values(err.response.data)[0] : 'Failed to update link'
+            toast.error(msg)
+        } finally {
+            setUpdatingLink(false)
         }
     }
 
@@ -251,6 +301,56 @@ export default function SettingsPage() {
                 </button>
             </div>
 
+            {/* Public Booking Link */}
+            <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+                        <HiOutlineLink className="w-5 h-5 text-indigo-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-surface-100">Public Booking Link</h2>
+                        <p className="text-sm text-surface-400">Share this link with guests to book without an account</p>
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                        type="text"
+                        readOnly
+                        value={publicBookingLink || 'Public link will appear here'}
+                        className="input-field flex-1"
+                    />
+                    <button
+                        onClick={handleCopyPublicLink}
+                        disabled={!publicBookingLink}
+                        className="btn-secondary text-sm"
+                    >
+                        {copied ? 'Copied' : 'Copy Link'}
+                    </button>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+                    <div>
+                        <label className="block text-xs font-semibold text-surface-500 uppercase tracking-widest mb-2">Custom Slug</label>
+                        <input
+                            type="text"
+                            value={profile?.public_booking_slug || ''}
+                            onChange={(e) => setProfile({ ...profile, public_booking_slug: e.target.value })}
+                            className="input-field"
+                            placeholder="e.g. ali or team-demo"
+                        />
+                        <p className="text-xs text-surface-500 mt-2">Only letters, numbers, and hyphens. Leave empty to auto-generate.</p>
+                    </div>
+                    <button
+                        onClick={handleUpdatePublicLink}
+                        disabled={updatingLink}
+                        className="btn-primary h-11 self-end"
+                    >
+                        {updatingLink ? 'Updating...' : 'Update Link'}
+                    </button>
+                </div>
+            </div>
+
             {/* Email / SMTP settings */}
             <div className="glass-card p-6">
                 <div className="flex items-center gap-3 mb-6">
@@ -325,16 +425,26 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between p-4 bg-surface-800/40 rounded-xl border border-surface-700/50">
                     <div>
                         <p className="font-medium">{googleStatus?.is_connected ? 'Connected to Google' : 'Not Connected'}</p>
+                        {googleStatus?.is_connected && googleStatus?.owner_email && (
+                            <p className="text-xs text-surface-500">Connected as {googleStatus.owner_email}</p>
+                        )}
                         {googleStatus?.is_connected && (
                             <p className="text-xs text-surface-500">Connected since {googleStatus.connected_at ? new Date(googleStatus.connected_at).toLocaleDateString() : 'recently'}</p>
                         )}
                     </div>
-                    <button
-                        onClick={googleStatus?.is_connected ? handleGoogleDisconnect : handleGoogleConnect}
-                        className={googleStatus?.is_connected ? 'btn-danger text-sm' : 'btn-primary text-sm'}
-                    >
-                        {googleStatus?.is_connected ? 'Disconnect' : 'Connect Account'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {googleStatus?.is_connected && (
+                            <button onClick={handleGoogleReconnect} className="btn-secondary text-sm">
+                                Reconnect
+                            </button>
+                        )}
+                        <button
+                            onClick={googleStatus?.is_connected ? handleGoogleDisconnect : handleGoogleConnect}
+                            className={googleStatus?.is_connected ? 'btn-danger text-sm' : 'btn-primary text-sm'}
+                        >
+                            {googleStatus?.is_connected ? 'Disconnect' : 'Connect Account'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
